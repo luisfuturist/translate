@@ -20,6 +20,9 @@ dependencies:
   '@remix-run/react':
     specifier: ^2.8.1
     version: 2.8.1(react-dom@18.2.0)(react@18.2.0)(typescript@5.3.3)
+  clsx:
+    specifier: ^2.1.0
+    version: 2.1.0
   framer-motion:
     specifier: ^11.0.12
     version: 11.0.12(react-dom@18.2.0)(react@18.2.0)
