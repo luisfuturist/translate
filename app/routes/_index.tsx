@@ -1,12 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Button, Tab, Tabs, Textarea, useDisclosure } from "@nextui-org/react";
 import { ActionFunctionArgs, json, type MetaFunction } from "@remix-run/cloudflare";
 import { Form, useActionData } from "@remix-run/react";
 import clsx from "clsx";
 import { useTransition } from "react";
 import Icon from "~/components/Icon";
+import useClipboard from "~/hooks/useClipboard";
 import useLanguages from "~/hooks/useLanguages";
 import LanguageModal from "~/modals/LanguageModal";
+import translate from "~/services/translate";
 
 export const meta: MetaFunction = () => {
   return [
@@ -22,15 +23,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const from = formData.get('from')
   const to = formData.get('to')
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-  const prompt = `Translate the from ${from} to ${to}: ${content}`;
-
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = await translate(content as string, from as string, to as string);
 
     return json({ success: true, data: text });
   } catch (e) {
@@ -49,6 +43,8 @@ export default function Index() {
   const transition = useTransition();
   const isSubmitting = transition.state === 'loading' || transition.state === 'submitting';
 
+  const { copyToClipboard } = useClipboard()
+
   return (
     <div className="flex h-screen flex-col items-center justify-center">
 
@@ -58,7 +54,7 @@ export default function Index() {
 
         <div className="flex gap-2">
           <div className="w-full">
-            <div className="flex gap-2">
+            <div className="flex gap-2 pb-2">
               <Tabs
                 aria-label="Translate from language"
                 variant="underlined"
@@ -71,7 +67,7 @@ export default function Index() {
                 }}
               >
                 {historyFrom.slice(0, 3).map((item) => (
-                  <Tab key={item.id} title={item.label} />
+                  <Tab key={item.label} title={item.label} />
                 ))}
               </Tabs>
 
@@ -87,13 +83,13 @@ export default function Index() {
               </Button>
             </div>
 
-            <Textarea name="content" height="120px" />
+            <Textarea minRows={6} name="content" height="120px" />
 
             <LanguageModal
-              lang={from}
+              langLabel={from}
               isOpen={languageModalFrom.isOpen}
               onClose={languageModalFrom.onClose}
-              setLang={(lang) => changeLang('from', lang.id)}
+              setLang={(lang) => changeLang('from', lang.label)}
             />
           </div>
 
@@ -112,7 +108,7 @@ export default function Index() {
           </Button>
 
           <div className="w-full">
-            <div className="flex gap-2">
+            <div className="flex gap-2 pb-2">
               <Tabs
                 aria-label="Translate to language"
                 variant="underlined"
@@ -125,7 +121,7 @@ export default function Index() {
                 }}
               >
                 {historyTo.slice(0, 3).map((item) => (
-                  <Tab key={item.id} title={item.label} />
+                  <Tab key={item.label} title={item.label} />
                 ))}
               </Tabs>
 
@@ -141,13 +137,27 @@ export default function Index() {
               </Button>
             </div>
 
-            <Textarea value={actionData?.success && actionData?.data} />
+            <div className="relative">
+              <Textarea minRows={6} value={actionData?.success && actionData?.data} />
+
+              <Button
+                onPress={() => copyToClipboard(actionData?.success && actionData?.data)}
+                isIconOnly
+                radius="full"
+                variant="light"
+                aria-label="Copy"
+                size="md"
+                className={clsx("absolute bottom-1 left-1 text-gray-600", languageModalTo.isOpen && "rotate-180")}
+              >
+                <Icon className="text-xl" name="content_copy" />
+              </Button>
+            </div>
 
             <LanguageModal
-              lang={to}
+              langLabel={to}
               isOpen={languageModalTo.isOpen}
               onClose={languageModalTo.onClose}
-              setLang={(lang) => changeLang('to', lang.id)}
+              setLang={(lang) => changeLang('to', lang.label)}
             />
           </div>
         </div>
@@ -158,7 +168,7 @@ export default function Index() {
       </Form>
 
       {actionData && actionData.success && <p>Form submitted successfully!</p>}
-      {actionData && actionData.error && <p>Form submitted with error! {JSON.stringify(actionData.data)}</p>}
+      {actionData && !actionData.success && <p>Form submitted with error! {JSON.stringify(actionData.data)}</p>}
     </div>
   );
 }

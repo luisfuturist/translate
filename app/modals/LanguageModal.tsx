@@ -7,7 +7,7 @@ import { Lang } from "~/types";
 interface Props {
   isOpen: boolean
   onClose: () => void
-  lang: string;
+  langLabel: string;
   setLang?: (lang: Lang) => void
 }
 
@@ -42,7 +42,8 @@ export default function LanguageModal(props: Props) {
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader></ModalHeader>
+            <ModalHeader>
+            </ModalHeader>
             <ModalBody>
               <ul className="grid gap-1 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -55,13 +56,13 @@ export default function LanguageModal(props: Props) {
                       })}
                       className={clsx([
                         "flex w-full justify-start",
-                        lang.id === props.lang && "text-primary"
+                        lang.label === props.langLabel && "text-primary"
                       ])}
-                      aria-current={lang.id === props.lang}
+                      aria-current={lang.label === props.langLabel}
                     >
                       <Icon
                         className={clsx([
-                          lang.id !== props.lang && 'opacity-0'
+                          lang.label !== props.langLabel && 'opacity-0'
                         ])}
                         aria-hidden
                       >
